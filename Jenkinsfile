@@ -1,3 +1,4 @@
+
 pipeline {
     agent any
 
@@ -11,12 +12,25 @@ pipeline {
             }
             steps {
                 sh '''
-                    ls -la
+                    set -e
+
+                    echo "Checking Node and npm"
                     node --version
                     npm --version
-                    npm ci
+
+                    echo "Configuring Zscaler certificate"
+                    if [ -f /usr/local/share/ca-certificates/zscaler-root-ca.crt ]; then
+                        export NODE_EXTRA_CA_CERTS=/usr/local/share/ca-certificates/zscaler-root-ca.crt
+                    fi
+
+                    echo "Installing dependencies"
+                    npm ci --no-audit --no-fund
+
+                    echo "Building React application"
                     npm run build
-                    ls -la
+
+                    echo "Checking build output"
+                    ls -la build/
                 '''
             }
         }
