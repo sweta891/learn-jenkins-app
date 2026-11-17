@@ -8,6 +8,7 @@ pipeline {
                 docker {
                     image 'node:18-alpine'
                     reuseNode true
+                    args '-v /usr/local/share/ca-certificates/zscaler-root-ca.crt:/usr/local/share/ca-certificates/zscaler-root-ca.crt:ro'
                 }
             }
 
@@ -19,8 +20,14 @@ pipeline {
                     node --version
                     npm --version
 
+                    echo "Configuring Zscaler certificate"
+                    export NODE_EXTRA_CA_CERTS=/usr/local/share/ca-certificates/zscaler-root-ca.crt
+
+                    echo "Checking certificate"
+                    test -s "$NODE_EXTRA_CA_CERTS"
+
                     echo "Installing dependencies"
-                    npm ci --no-audit --no-fund --verbose
+                    npm ci --no-audit --no-fund
 
                     echo "Building React application"
                     npm run build
