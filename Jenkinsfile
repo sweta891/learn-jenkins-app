@@ -14,12 +14,17 @@ pipeline {
 
             steps {
                 sh '''
+                    set -eu
+
                     echo "Checking Node and npm"
                     node --version
                     npm --version
 
                     echo "Installing dependencies"
-                    npm ci
+                    npm ci --no-audit --no-fund --verbose
+
+                    echo "Checking react-scripts"
+                    npm ls react-scripts
 
                     echo "Building application"
                     npm run build
@@ -37,9 +42,17 @@ pipeline {
 
             steps {
                 sh '''
+                    set -eu
+
                     echo "Running application tests"
-                    npm test
+                    CI=true npm test -- --watchAll=false
                 '''
+            }
+
+            post {
+                always {
+                    junit 'test-results/junit.xml'
+                }
             }
         }
 
