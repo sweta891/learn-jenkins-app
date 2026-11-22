@@ -8,28 +8,31 @@ pipeline {
                 docker {
                     image 'node:18-alpine'
                     reuseNode true
+                    args '-v /certs/zscaler-root-ca.pem:/tmp/zscaler-root-ca.pem:ro'
                 }
             }
+
             steps {
                 sh '''
-                    set -e
+                    set -eu
 
                     echo "Checking Node and npm"
                     node --version
                     npm --version
 
-                    echo "Checking Zscaler certificate"
-                    if [ -f /usr/local/share/ca-certificates/zscaler-root-ca.crt ]; then
-                        echo "Zscaler certificate found"
-                        export NODE_EXTRA_CA_CERTS=/usr/local/share/ca-certificates/zscaler-root-ca.crt
-                    else
-                        echo "Zscaler certificate NOT found"
-                    fi
+                    echo "Configuring Zscaler certificate"
+                    export NODE_EXTRA_CA_CERTS=/tmp/zscaler-root-ca.pem
+
+                    echo "Checking certificate"
+                    test -f "$NODE_EXTRA_CA_CERTS"
 
                     echo "Installing dependencies"
-                    if ! npm ci --no-audit --no-fund; then
-                        echo "npm installation failed. Latest npm log:"
-                        ls -t /home/node/.npm/_logs/* | head -1 | xargs tail -n 60
+                    if ! npm ci --no-audit --no-fund --verbose; then
+                        echo "npm ci failed. Showing latest npm log:"
+                        log_file=$(ls -t /home/node/.npm/_logs/* 2>/dev/null | head -n 1 || true)
+                        if [ -n "$log_file" ]; then
+                            tail -n 100 "$log_file"
+                        fi
                         exit 1
                     fi
 
