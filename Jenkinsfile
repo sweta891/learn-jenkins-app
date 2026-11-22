@@ -44,5 +44,15 @@ pipeline {
                 '''
             }
         }
+
+        // NEW STAGE: Archive the generated React build
+        stage('Archive Build') {
+            steps {
+                echo 'Archiving React build files'
+
+                archiveArtifacts artifacts: 'build/**',
+                                 fingerprint: true
+            }
+        }
     }
 }
